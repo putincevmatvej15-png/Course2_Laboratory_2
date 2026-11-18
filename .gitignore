@@ -1,0 +1,16 @@
+# Бинарники и исполняемые файлы
+bc
+btc
+hcd
+hoad
+lfu
+msd
+pr
+pr_chain
+pr_cuckoo
+ss
+ssf
+# Временные файлы
+data.txt
+.~lock.*
+*.o
