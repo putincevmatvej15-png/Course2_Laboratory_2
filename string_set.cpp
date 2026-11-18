@@ -1,15 +1,7 @@
-#include "structs.hpp"
+#include "string_set.h"
 #include <iostream>
-#include <string>
 #include <fstream>
-#include <vector>
 using namespace std;
-
-struct Set {
-    vector<ForwardList<string>> buckets;
-    size_t size = 0;
-    explicit Set(int n = 1009) : buckets(n) {}
-};
 
 size_t hash_string(const string& s, int n) {
     unsigned long long h = 0;

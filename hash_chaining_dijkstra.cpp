@@ -121,7 +121,7 @@ int dijkstra(const Graph& g, int start, int end, vector<int>& path) {
 
 int main(int argc, char* argv[]) {
     if (argc >= 2 && string(argv[1]) == "--bench") {
-        cout << "=== Эмпирический анализ: ЦЕПОЧКИ ===\n";
+        cout << " Эмпирический анализ: Цепочки\n";
         const int N = 100000;
         vector<string> keys(N);
         mt19937_64 rng(42);
@@ -141,11 +141,12 @@ int main(int argc, char* argv[]) {
 
         cout << "Вставка " << N << " = " << ins << " мс\n";
         cout << "Поиск   " << N << " = " << fnd << " мс\n";
+        cout << "Найдено ключей: " << hits << "\n";
         cout << "load = " << t.load() << "\n";
         return 0;
     }
 
-    cout << "=== 6.2. Метод цепочек: маршруты ===\n";
+    cout << " 6.2. Метод цепочек: маршруты \n";
 
     vector<string> servers = {"A", "B", "C", "D", "E"};
     ChainingHashTable serverIndex;

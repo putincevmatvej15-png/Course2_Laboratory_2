@@ -1,8 +1,7 @@
-#include "structs.hpp"
+#include "subarray_sum_finder.h"
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include <string>
 #include <unordered_map>
 using namespace std;
 
@@ -35,7 +34,9 @@ void find_subarrays_with_sum(const MyArray<int>& arr, int target) {
         prefix[cur].push_back((int)i);
     }
 
-    if (!found) cout << "Подмассивы с суммой " << target << " не найдены.\n";
+    if (!found) {
+        cout << "Подмассивы с суммой " << target << " не найдены.\n";
+    }
 }
 
 int main(int argc, char* argv[]) {

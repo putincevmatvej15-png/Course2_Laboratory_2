@@ -1,64 +1,50 @@
-#include "structs.hpp"
+#include "lfu_cache.h"
 #include <iostream>
-#include <unordered_map>
-#include <memory>
-#include <string>
 using namespace std;
 
-class LFUCache {
-    int capacity, minFreq;
-    struct Node { int value; int freq; };
-    unordered_map<int, Node> keyMap;
-    unordered_map<int, unique_ptr<DoublyList<int>>> freqMap;
+DoublyList<int>& LFUCache::getList(int f) {
+    auto& p = freqMap[f];
+    if (!p) p = make_unique<DoublyList<int>>();
+    return *p;
+}
 
-    DoublyList<int>& getList(int f) {
-        auto& p = freqMap[f];
-        if (!p) p = make_unique<DoublyList<int>>();
-        return *p;
+void LFUCache::touch(int key) {
+    auto& node = keyMap[key];
+    int f = node.freq;
+    getList(f).del_value(key);
+    if (getList(f).empty()) {
+        freqMap.erase(f);
+        if (minFreq == f) ++minFreq;
     }
+    getList(f + 1).push_back(key);
+    node.freq = f + 1;
+}
 
-    void touch(int key) {
-        auto& node = keyMap[key];
-        int f = node.freq;
+LFUCache::LFUCache(int cap) : capacity(cap), minFreq(0) {}
 
-        getList(f).del_value(key);
-        if (getList(f).empty()) {
-            freqMap.erase(f);
-            if (minFreq == f) ++minFreq;
-        }
-        getList(f + 1).push_back(key);
-        node.freq = f + 1;
-    }
-public:
-    LFUCache(int cap) : capacity(cap), minFreq(0) {}
+int LFUCache::get(int key) {
+    if (!keyMap.count(key)) return -1;
+    touch(key);
+    return keyMap[key].value;
+}
 
-    int get(int key) {
-        if (!keyMap.count(key)) return -1;
+void LFUCache::set(int key, int value) {
+    if (capacity <= 0) return;
+    if (keyMap.count(key)) {
+        keyMap[key].value = value;
         touch(key);
-        return keyMap[key].value;
+        return;
     }
-
-    void set(int key, int value) {
-        if (capacity <= 0) return;
-
-        if (keyMap.count(key)) {
-            keyMap[key].value = value;
-            touch(key);
-            return;
-        }
-
-        if ((int)keyMap.size() == capacity) {
-            int victim = getList(minFreq).get(0);
-            getList(minFreq).pop_front();
-            if (getList(minFreq).empty()) freqMap.erase(minFreq);
-            keyMap.erase(victim);
-        }
-
-        getList(1).push_back(key);
-        keyMap[key] = {value, 1};
-        minFreq = 1;
+    if ((int)keyMap.size() == capacity) {
+        int victim = getList(minFreq).get(0);
+        getList(minFreq).pop_front();
+        if (getList(minFreq).empty()) freqMap.erase(minFreq);
+        keyMap.erase(victim);
     }
-};
+    getList(1).push_back(key);
+    keyMap[key] = {value, 1};
+    minFreq = 1;
+}
 
 int main() {
     int cap, q;

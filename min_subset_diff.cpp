@@ -1,8 +1,7 @@
-#include "structs.hpp"
+#include "min_subset_diff.h"
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include <string>
 #include <cmath>
 #include <climits>
 using namespace std;
@@ -10,11 +9,7 @@ using namespace std;
 int min_diff = INT_MAX;
 MyArray<int> best1, best2;
 
-// Перебор: на каждом шаге кладём arr[idx] в a или в b.
-// idx идёт С НАЧАЛА (0 → n-1), поэтому порядок в подмножествах
-// сохраняется как в исходном массиве.
-void rec(int arr[], int idx, int n, int s1, int s2,
-         MyArray<int>& a, MyArray<int>& b) {
+void rec(int arr[], int idx, int n, int s1, int s2, MyArray<int>& a, MyArray<int>& b) {
     if (idx == n) {
         int d = abs(s1 - s2);
         if (d < min_diff) {
@@ -26,13 +21,10 @@ void rec(int arr[], int idx, int n, int s1, int s2,
         }
         return;
     }
-
-    // вариант 1: arr[idx] → в a
     a.push_back(arr[idx]);
     rec(arr, idx + 1, n, s1 + arr[idx], s2, a, b);
     a.del_at(a.len() - 1);
 
-    // вариант 2: arr[idx] → в b
     b.push_back(arr[idx]);
     rec(arr, idx + 1, n, s1, s2 + arr[idx], a, b);
     b.del_at(b.len() - 1);
@@ -55,22 +47,15 @@ int sum_arr(const MyArray<int>& a) {
 
 int main(int argc, char* argv[]) {
     vector<int> nums;
-
     if (argc >= 2) {
-        // ./msd "5 8 1 14 7"
         istringstream iss(argv[1]);
         int x;
         while (iss >> x) nums.push_back(x);
     } else {
-        // ./msd  (ввод с клавиатуры, конец — Ctrl+D)
         int x;
         while (cin >> x) nums.push_back(x);
     }
-
-    if (nums.empty()) {
-        cerr << "Пустой ввод\n";
-        return 1;
-    }
+    if (nums.empty()) { cerr << "Пустой ввод\n"; return 1; }
 
     int* arr = new int[nums.size()];
     for (size_t i = 0; i < nums.size(); ++i) arr[i] = nums[i];
@@ -84,15 +69,11 @@ int main(int argc, char* argv[]) {
         if (i + 1 != nums.size()) cout << ", ";
     }
     cout << "}\n";
-
     cout << "Подмножество 1: "; print_arr(best1);
     cout << " (сумма " << sum_arr(best1) << ")\n";
-
     cout << "Подмножество 2: "; print_arr(best2);
     cout << " (сумма " << sum_arr(best2) << ")\n";
-
     cout << "Минимальная разница: " << min_diff << "\n";
-
     delete[] arr;
     return 0;
 }

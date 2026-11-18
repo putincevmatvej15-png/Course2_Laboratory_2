@@ -14,7 +14,7 @@ class CuckooHashTable {
     struct Slot { string key; int value; bool used = false; };
     vector<Slot> t1, t2;
     size_t count = 0;
-    static const int MAX_KICKS = 500;
+    static const int MAX_KICKS = 200; 
 
     size_t h1(const string& key) const {
         unsigned long long h = 0;
@@ -27,37 +27,69 @@ class CuckooHashTable {
         return (size_t)(h % t2.size());
     }
 
+    void insertRaw(const string& key, int value) {
+        string k = key;
+        int v = value;
+        for (int kick = 0; kick < MAX_KICKS; ++kick) {
+            size_t idx1 = h1(k);
+            if (!t1[idx1].used) { t1[idx1] = {k, v, true}; ++count; return; }
+            std::swap(k, t1[idx1].key);
+            std::swap(v, t1[idx1].value);
+
+            size_t idx2 = h2(k);
+            if (!t2[idx2].used) { t2[idx2] = {k, v, true}; ++count; return; }
+            std::swap(k, t2[idx2].key);
+            std::swap(v, t2[idx2].value);
+        }
+    }
+
     void rehash(size_t newSize) {
         vector<Slot> old1 = std::move(t1), old2 = std::move(t2);
         t1.assign(newSize, Slot{});
         t2.assign(newSize, Slot{});
         count = 0;
-        for (auto& s : old1) if (s.used) insertNoRehash(s.key, s.value);
-        for (auto& s : old2) if (s.used) insertNoRehash(s.key, s.value);
+        for (auto& s : old1) if (s.used) insertRaw(s.key, s.value);
+        for (auto& s : old2) if (s.used) insertRaw(s.key, s.value);
     }
 
-    void insertNoRehash(string key, int value) {
-        for (int kick = 0; kick < MAX_KICKS; ++kick) {
-            size_t i = h1(key);
-            if (!t1[i].used) { t1[i] = {key, value, true}; ++count; return; }
-            std::swap(key, t1[i].key);
-            std::swap(value, t1[i].value);
+    // Возвращает false, если произошел цикл
+    bool insertNoRehash(string key, int value) {
+        size_t i = h1(key);
+        if (t1[i].used && t1[i].key == key) { t1[i].value = value; return true; }
+        size_t j = h2(key);
+        if (t2[j].used && t2[j].key == key) { t2[j].value = value; return true; }
 
-            size_t j = h2(key);
-            if (!t2[j].used) { t2[j] = {key, value, true}; ++count; return; }
-            std::swap(key, t2[j].key);
-            std::swap(value, t2[j].value);
+        for (int kick = 0; kick < MAX_KICKS; ++kick) {
+            size_t idx1 = h1(key);
+            if (!t1[idx1].used) { t1[idx1] = {key, value, true}; ++count; return true; }
+            std::swap(key, t1[idx1].key);
+            std::swap(value, t1[idx1].value);
+
+            size_t idx2 = h2(key);
+            if (!t2[idx2].used) { t2[idx2] = {key, value, true}; ++count; return true; }
+            std::swap(key, t2[idx2].key);
+            std::swap(value, t2[idx2].value);
         }
-        rehash(t1.size() * 2);
-        insertNoRehash(key, value);
+        return false; 
     }
 
 public:
-    explicit CuckooHashTable(size_t cap = 16) : t1(cap), t2(cap) {}
+    explicit CuckooHashTable(size_t cap = 1024) : t1(cap), t2(cap) {}
 
     void insert(const string& key, int value) {
-        if ((double)count / (t1.size() + t2.size()) >= 0.9) rehash(t1.size() * 2);
-        insertNoRehash(key, value);
+        if ((double)count / (t1.size() + t2.size()) >= 0.4) {
+            rehash(t1.size() * 3); 
+        }
+        
+        int attempts = 0;
+        while (!insertNoRehash(key, value)) {
+            rehash(t1.size() * 3);
+            attempts++;
+            if (attempts > 5) { 
+                cerr << "Критическая ошибка: не удалось вставить ключ " << key << "\n";
+                break;
+            }
+        }
     }
 
     int get(const string& key, int def = -1) const {
@@ -128,13 +160,14 @@ int dijkstra(const Graph& g, int start, int end, vector<int>& path) {
 
 int main(int argc, char* argv[]) {
     if (argc >= 2 && string(argv[1]) == "--bench") {
-        cout << "=== Эмпирический анализ: КУКУШКА ===\n";
+        cout << " Эмпирический анализ: Кукушка\n";
         const int N = 100000;
         vector<string> keys(N);
         mt19937_64 rng(42);
         for (int i = 0; i < N; ++i) keys[i] = "k_" + to_string(rng() % 10000000);
 
-        CuckooHashTable t;
+        CuckooHashTable t(N * 4); 
+        
         auto s = chrono::high_resolution_clock::now();
         for (auto& k : keys) t.insert(k, 1);
         auto e = chrono::high_resolution_clock::now();
@@ -148,11 +181,12 @@ int main(int argc, char* argv[]) {
 
         cout << "Вставка " << N << " = " << ins << " мс\n";
         cout << "Поиск   " << N << " = " << fnd << " мс\n";
+        cout << "Найдено ключей: " << hits << "\n"; 
         cout << "load = " << t.load() << "\n";
         return 0;
     }
 
-    cout << "=== 6.2. Кукушкино хеширование: маршруты ===\n";
+    cout << "6.2. Кукушкино хеширование: маршруты \n";
 
     vector<string> servers = {"A", "B", "C", "D", "E"};
     CuckooHashTable serverIndex;
